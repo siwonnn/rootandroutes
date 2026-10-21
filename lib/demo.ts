@@ -1,0 +1,7 @@
+import type { Shop, Story } from "./types";
+export const demoShops: Shop[] = [
+  { id: "11111111-1111-4111-8111-111111111111", slug: "hometown-table", name: "고향의 식탁", category: "음식점", region: "안산 · 원곡동", summary: "따뜻한 한 그릇에 담아낸, 오래된 고향의 기억.", image_url: "", image_alt: "", address: "안산시 원곡동 · 예시 가게", hours: "실제 가게 등록 후 안내합니다", phone: "", menu: "고향의 국수와 따뜻한 한 끼", checked_at: null, status: "published", is_sample: true },
+  { id: "22222222-2222-4222-8222-222222222222", slug: "afternoon-tea", name: "오후의 찻집", category: "카페", region: "안산 · 원곡동", summary: "차 한 잔을 사이에 두고, 서로의 안부를 묻는 곳.", image_url: "", image_alt: "", address: "안산시 원곡동 · 예시 가게", hours: "실제 가게 등록 후 안내합니다", phone: "", menu: "밀크티와 고향의 차", checked_at: null, status: "published", is_sample: true },
+  { id: "33333333-3333-4333-8333-333333333333", slug: "small-workshop", name: "작은 공방", category: "상점", region: "안산 · 원곡동", summary: "손끝에서 이어지는 문화, 일상에 머무는 작은 물건들.", image_url: "", image_alt: "", address: "안산시 원곡동 · 예시 가게", hours: "실제 가게 등록 후 안내합니다", phone: "", menu: "생활 소품과 손으로 만든 선물", checked_at: null, status: "published", is_sample: true },
+];
+export const demoStories: Story[] = demoShops.map((shop, i) => ({ id: shop.id, shop_id: shop.id, title: ["음식에 담아온 고향의 기억", "차 한 잔만큼 가까워지는 사이", "손끝으로 이어가는 나의 뿌리"][i], introduction: shop.summary, body: "이 공간에는 사장님과 직접 나눈 이야기가 담길 예정입니다. 가게를 열게 된 계기부터 고향에서 가져온 기억, 오늘의 일상까지 천천히 들려드립니다.\n\nRoots & Routes는 당사자가 공개하고 싶은 경험을 중심으로 인터뷰를 기록합니다. 사진과 글은 사장님이 내용을 확인한 뒤 함께 소개합니다.\n\n현재 화면은 구성 확인을 위한 예시입니다. 실제 인터뷰나 발언을 인용한 내용이 아닙니다.", status: "published" }));

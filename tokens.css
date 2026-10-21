@@ -1,0 +1,37 @@
+/* Hallmark · editorial neighborhood journal · warm plum/apricot · split photographic opening
+ * Pre-emit critique: Philosophy 4, Hierarchy 4, Execution 4, Specificity 5, Restraint 4, Variety 4 */
+@font-face { font-family: "RR Gowun Batang"; src: url("/fonts/GowunBatang-Bold.ttf") format("truetype"); font-style: normal; font-weight: 700; font-display: swap; }
+@font-face { font-family: "RR Hahmlet"; src: url("/fonts/Hahmlet.ttf") format("truetype"); font-style: normal; font-weight: 100 900; font-display: swap; }
+@font-face { font-family: "RR Pretendard"; src: url("/fonts/PretendardVariable.woff2") format("woff2"); font-style: normal; font-weight: 45 920; font-display: swap; }
+:root {
+  --background: #faf6ef;
+  --foreground: #472834;
+  --color-paper: #fffdf8;
+  --color-canvas: #faf6ef;
+  --color-ink: #472834;
+  --color-muted: #766a65;
+  --color-apricot: #eecd97;
+  --color-sage: #e0e4d9;
+  --color-forest: #526550;
+  --color-rose: #eedcde;
+  --color-rose-ink: #89566c;
+  --color-line: #dcd4c9;
+  --color-light-line: #a8b1a2;
+  --color-danger: #a12d3c;
+  --color-success: #355735;
+  --font-body: "RR Pretendard", "Malgun Gothic", sans-serif;
+  --font-display: "RR Gowun Batang", "Batang", serif;
+  --font-gowun: "RR Gowun Batang", serif;
+  --font-hahmlet: "RR Hahmlet", serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --space-xs: 8px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 32px;
+  --space-xl: 48px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+  --radius-sm: 4px;
+  --dur-fast: 180ms;
+  --ease-default: ease;
+}

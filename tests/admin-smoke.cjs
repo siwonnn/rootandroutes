@@ -1,0 +1,90 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+// Writes ONE clearly marked fixture to the connected DB. Remove the exact fixture after running.
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'C:/Users/seanc/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const base = process.env.TEST_BASE_URL || 'http://localhost:3000';
+require('@next/env').loadEnvConfig(process.cwd(), true);
+const password = process.env.ADMIN_PASSWORD;
+assert.ok(password, 'ADMIN_PASSWORD must be configured');
+const slug = `admin-smoke-${Date.now()}`;
+fs.writeFileSync('artifacts/admin-test-fixture.json', JSON.stringify({ slug }));
+const env = Object.fromEntries(fs.readFileSync('.env.local', 'utf8').split(/\r?\n/).filter(l => l && !l.startsWith('#')).map(l => { const i = l.indexOf('='); return [l.slice(0, i), l.slice(i + 1)]; }));
+async function publicRows(table, filter) { const r = await fetch(`${env.SUPABASE_URL}/rest/v1/${table}?select=*&${filter}`, { headers: { apikey: env.SUPABASE_PUBLISHABLE_KEY } }); assert.equal(r.status, 200); return r.json(); }
+(async () => {
+  const browser = await chromium.launch({ headless: true, channel: 'chrome' });
+  try {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    const page = await context.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
+    const post = (path, data, origin = base) => context.request.post(`${base}${path}`, { headers: { origin }, data });
+    await page.goto(`${base}/admin`, { waitUntil: 'networkidle' });
+    assert.equal(await page.getByRole('heading', { name: '관리자 로그인' }).count(), 1);
+    assert.equal(await page.locator('.admin-row').count(), 0);
+    assert.equal((await post('/api/admin/manage', {})).status(), 401);
+    assert.equal((await post('/api/admin/login', { password: 'incorrect' }, 'https://untrusted.example')).status(), 403);
+    assert.equal((await post('/api/admin/login', { password: 'incorrect' })).status(), 401);
+    await page.getByLabel('비밀번호', { exact: true }).fill(password);
+    await page.getByRole('button', { name: '관리자 페이지 들어가기' }).click();
+    await page.getByRole('heading', { name: '가게와 이야기 관리' }).waitFor();
+    const cookie = (await context.cookies()).find(c => c.name === 'rr_admin_session');
+    assert.ok(cookie?.httpOnly); assert.equal(cookie.sameSite, 'Strict');
+    await page.screenshot({ path: 'artifacts/admin-dashboard.png', fullPage: true });
+    for (const width of [320, 375, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+      await page.getByRole('button', { name: '+ 가게 등록', exact: true }).click();
+      assert.ok(await page.locator('dialog').evaluate(e => e.scrollWidth <= e.clientWidth + 1));
+      await page.keyboard.press('Escape');
+    }
+    await page.getByRole('button', { name: '+ 가게 등록', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.locator('[name=name]').fill('[ADMIN-SMOKE] 테스트 가게');
+    await dialog.locator('[name=slug]').fill(slug);
+    await dialog.locator('[name=category]').fill('테스트');
+    await dialog.locator('[name=region]').fill('테스트 지역');
+    await dialog.locator('[name=summary]').fill('관리자 기능 검증용 임시 가게');
+    await dialog.getByRole('button', { name: '저장하기' }).click();
+    await dialog.waitFor({ state: 'hidden' });
+    await page.getByRole('heading', { name: '[ADMIN-SMOKE] 테스트 가게', exact: true }).waitFor();
+    assert.equal((await publicRows('shops', `slug=eq.${slug}`)).length, 0);
+    let row = page.locator('.admin-row').filter({ hasText: '[ADMIN-SMOKE] 테스트 가게' });
+    await row.getByRole('button', { name: '가게 수정', exact: true }).click();
+    await dialog.locator('[name=name]').fill('[ADMIN-SMOKE] 수정된 가게');
+    await dialog.locator('[name=status]').selectOption('published');
+    await dialog.getByRole('button', { name: '저장하기' }).click(); await dialog.waitFor({ state: 'hidden' });
+    const [shop] = await publicRows('shops', `slug=eq.${slug}`); assert.equal(shop.name, '[ADMIN-SMOKE] 수정된 가게');
+    row = page.locator('.admin-row').filter({ hasText: '[ADMIN-SMOKE] 수정된 가게' });
+    await row.getByRole('button', { name: '이야기 작성', exact: true }).click();
+    await dialog.locator('[name=title]').fill('[ADMIN-SMOKE] 첫 이야기');
+    await dialog.locator('[name=body]').fill('첫 문단입니다.\n\n둘째 문단입니다.');
+    await dialog.locator('[name=status]').selectOption('published');
+    await dialog.getByRole('button', { name: '저장하기' }).click(); await dialog.waitFor({ state: 'hidden' });
+    assert.equal((await publicRows('stories', `shop_id=eq.${shop.id}`))[0].title, '[ADMIN-SMOKE] 첫 이야기');
+    await page.getByRole('button', { name: '이야기 관리', exact: true }).click();
+    row = page.locator('.admin-row').filter({ hasText: '[ADMIN-SMOKE] 첫 이야기' });
+    await row.getByRole('button', { name: '이야기 수정', exact: true }).click();
+    await dialog.locator('[name=title]').fill('[ADMIN-SMOKE] 수정된 이야기');
+    await dialog.getByRole('button', { name: '저장하기' }).click(); await dialog.waitFor({ state: 'hidden' });
+    const publicPage = await browser.newPage();
+    await publicPage.goto(`${base}/shops/${slug}`, { waitUntil: 'networkidle' });
+    await publicPage.getByText('[ADMIN-SMOKE] 수정된 이야기', { exact: true }).waitFor();
+    await publicPage.close();
+    await page.getByRole('button', { name: '가게 관리', exact: true }).click();
+    row = page.locator('.admin-row').filter({ hasText: '[ADMIN-SMOKE] 수정된 가게' });
+    await row.getByRole('button', { name: '가게 수정', exact: true }).click();
+    await dialog.locator('[name=status]').selectOption('archived');
+    await dialog.getByRole('button', { name: '저장하기' }).click(); await dialog.waitFor({ state: 'hidden' });
+    assert.equal((await publicRows('shops', `slug=eq.${slug}`)).length, 0);
+    assert.equal((await publicRows('stories', `shop_id=eq.${shop.id}`)).length, 0);
+    await page.getByRole('button', { name: '로그아웃', exact: true }).click();
+    await page.getByRole('heading', { name: '관리자 로그인' }).waitFor();
+    assert.equal((await context.cookies()).some(c => c.name === 'rr_admin_session'), false);
+    const replay = await context.request.post(`${base}/api/admin/manage`, { headers: { origin: base, cookie: `${cookie.name}=${cookie.value}` }, data: { action: 'save_shop', data: { ...shop, status: 'published' } } });
+    assert.equal(replay.status(), 401);
+    const wrongGateway = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/admin_dispatch`, { method: 'POST', headers: { apikey: env.SUPABASE_PUBLISHABLE_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_token: 'invalid', p_action: 'dashboard', p_session: null, p_version: null }) });
+    assert.ok([401, 403].includes(wrongGateway.status));
+    assert.deepEqual(errors, []);
+    console.log('PASS: login, CSRF, cookie flags, responsive dialogs, shop/story create/edit, RLS visibility, archive, logout/replay, gateway denial.');
+    console.log(`Cleanup fixture slug: ${slug}`);
+  } finally { await browser.close(); }
+})().catch(e => { console.error(e); process.exitCode = 1; });

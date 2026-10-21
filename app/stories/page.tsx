@@ -1,0 +1,6 @@
+import Image from "next/image";
+import Link from "next/link";
+import { getShops, getStories } from "@/lib/data";
+import { Arrow } from "@/components/marks";
+export const metadata = { title: "이웃의 이야기" };
+export default async function StoriesPage() { const [shops, stories] = await Promise.all([getShops(), getStories()]); return <main id="main" className="container page-content"><div className="page-intro"><p className="eyebrow">ROOTS & ROUTES JOURNAL</p><h1>가게 너머, 사람 이야기.</h1><p>어디서 왔는지, 무엇을 좋아하는지, 어떤 오늘을 살고 있는지.</p></div><div className="journal-list">{stories.map(story => { const shop = shops.find(s => s.id === story.shop_id); return shop && <Link className="journal-entry" href={`/shops/${shop.slug}#story`} key={story.id}>{!shop.is_sample && shop.image_url && <div className="journal-photo"><Image src={shop.image_url} alt={shop.image_alt || shop.name} fill sizes="(max-width: 720px) 100vw, 40vw" unoptimized/></div>}<div><p className="eyebrow">{shop.region} · {shop.name}{shop.is_sample ? " · 예시 이야기" : ""}</p><h2>{story.title}</h2><p>{story.introduction}</p><span className="text-link">이야기 읽기 <Arrow/></span></div></Link>; })}{stories.length === 0 && <p className="empty-state">첫 번째 이야기를 준비하고 있습니다.</p>}</div></main>; }
